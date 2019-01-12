@@ -1,5 +1,5 @@
 Parameters:
-  Code:
+  APICode:
     Type: String
 
 Resources:
@@ -23,7 +23,7 @@ Resources:
         SSEEnabled: True
       TableName: !Sub ${AWS::StackName}-connections
 
-  Role:
+  APILambdaFunctionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -46,11 +46,11 @@ Resources:
                 Resource:
                   - !GetAtt ConnectionsTable.Arn
 
-  LoggingPolicy:
+  APILambdaFunctionRoleLoggingPolicy:
     Type: AWS::IAM::Policy
     Properties:
       Roles:
-        - !Ref Role
+        - !Ref APILambdaFunctionRole
       PolicyName: LoggingRolePolicy
       PolicyDocument:
         Version: 2012-10-17
@@ -67,18 +67,18 @@ Resources:
               - logs:DescribeLogStreams
             Effect: Allow
             Resource:
-              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunction}*
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${APILambdaFunction}*
             Sid: AllowLogGroupOperations
-  LambdaFunction:
+  APILambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      FunctionName: !Ref AWS::StackName
-      Role: !GetAtt Role.Arn
+      FunctionName: !Sub ${AWS::StackName}-api
+      Role: !GetAtt APILambdaFunctionRole.Arn
       Runtime: nodejs8.10
       Timeout: 10
       Code:
-        ZipFile: !Ref Code
+        ZipFile: !Ref APICode
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTable
