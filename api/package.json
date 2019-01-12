@@ -1,0 +1,21 @@
+{
+  "name": "ensign-public-overrides",
+  "version": "0.1.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "webpack",
+    "lint": "tslint \"src/**/*.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "ts-loader": "^5.3.2",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2",
+    "webpack": "^4.28.3",
+    "webpack-cli": "^3.2.0"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.358.0",
+    "wscat": "^2.2.1"
+  }
+}

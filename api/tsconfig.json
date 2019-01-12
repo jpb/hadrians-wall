@@ -1,0 +1,17 @@
+{
+  "include": ["src"],
+  "exclude": ["node_modules", "build"],
+  "compilerOptions": {
+    "types": ["node"],
+    "baseUrl": "./src",
+    "pretty": true,
+    "target": "es2017",
+    "noImplicitAny": true,
+    "sourceMap": true,
+    "outDir": "./build",
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "typeRoots": ["interfaces/packages", "node_modules/@types"],
+    "resolveJsonModule": true
+  }
+}
