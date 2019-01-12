@@ -16,7 +16,15 @@ type LambdaResponse = {
   body: string;
 }
 
-function subscribe(connectionId: string, s3ObjectPath: string) {
+type Body = {
+  id: string,
+  kind: string,
+  data: string
+}
+
+type ResponseFn = (statusCode: number, data: string) => LambdaResponse;
+
+function subscribe(connectionId: string, s3ObjectPath: string, response: ResponseFn) {
   const params = {
     TableName: CONNECTIONS_TABLE_NAME,
     Item: {
@@ -27,19 +35,13 @@ function subscribe(connectionId: string, s3ObjectPath: string) {
 
   return DB.putItem(params).promise()
     .then(() => {
-      return {
-        statusCode: 200,
-        body: `Subscribed to ${s3ObjectPath}`
-      };
+      return response(200, `Subscribed to ${s3ObjectPath}`);
     }, (err) => {
-      return {
-        statusCode: 500,
-        body: JSON.stringify(err)
-      };
+      return response(500, err.message);
     });
 }
 
-function disconnect(connectionId: string) {
+function disconnect(connectionId: string, response: ResponseFn) {
   var params = {
     ExpressionAttributeValues: {
       ":connectionId": {
@@ -67,27 +69,18 @@ function disconnect(connectionId: string) {
         };
         return DB.deleteItem(params).promise();
       })).then(() => {
-        return {
-          statusCode: 200,
-          body: 'Disconnected'
-        }
+        return response(200, 'Disconnected');
       }, (err) => {
-        return {
-          statusCode: 500,
-          body: JSON.stringify(err)
-        }
+        return response(500, err.message);
       });
     }, (err) => {
-      return {
-        statusCode: 500,
-        body: JSON.stringify(err)
-      };
+      return response(500, err.message);
     });
 }
 
 export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
   const {connectionId} = event.requestContext;
-  let body;
+  let body: Partial<Body>;
 
   try {
     body = JSON.parse(event.body)
@@ -99,30 +92,31 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
     body = {};
   }
 
+  const response = (statusCode: number, data: string) => {
+    return {
+      statusCode,
+      body: JSON.stringify({
+        id: body.id,
+        kind: statusCode === 200 ? 'response' : 'error',
+        data,
+      })
+    }
+  }
+
   switch (event.requestContext.routeKey) {
     case '$connect':
-      return {
-        statusCode: 200,
-        body: 'Connected'
-      }
+      return response(200, 'Connected');
     case '$disconnect':
-      return disconnect(connectionId);
+      return disconnect(connectionId, response);
     case 'subscribe':
-      const {s3ObjectPath} = body;
-      if (typeof s3ObjectPath === 'string') {
-        return subscribe(connectionId, s3ObjectPath);
+      if (typeof body.data === 'string') {
+        return subscribe(connectionId, body.data, response);
       } else {
-        return {
-          statusCode: 500,
-          body: 'Missing property `s3ObjectPath`'
-        }
+        return response(500, 'Missing string property `data`');
       }
     default:
-      const {action} = body;
-      return {
-        statusCode: 500,
-        body: `Unknown routeKey: ${event.requestContext.routeKey} action: ${action}`
-      }
+      const {kind} = body;
+      return response(500, `Unknown routeKey: ${event.requestContext.routeKey} kind: ${kind}`);
   }
 
 }
