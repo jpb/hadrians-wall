@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk';
 import * as AGMAPI from 'aws-sdk/clients/apigatewaymanagementapi';
 
+import { EventBody } from './types';
 import configureAWS from './configureAWS';
 
 const DB = new AWS.DynamoDB({ apiVersion: '2012-10-08' });
@@ -62,13 +63,14 @@ export async function handler(event: LambdaEvent): Promise<any> {
               endpoint
             });
             console.log(`Notifying ${item.connectionId.S}@${endpoint} for ${item.s3ObjectPath.S}`)
+            const event: EventBody = {
+              id: id(),
+              kind: 'notification',
+              data: item.s3ObjectPath.S
+            };
             return api.postToConnection({
               ConnectionId: item.connectionId.S,
-              Data: JSON.stringify({
-                id: id(),
-                kind: 'notification',
-                data: item.s3ObjectPath.S
-              })
+              Data: JSON.stringify(event)
             }).promise();
           } else {
             console.error(`Missing data ${JSON.stringify(item)}`);

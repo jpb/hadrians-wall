@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk';
 import * as process from 'process';
 
+import { EventBody } from './types';
 import configureAWS from './configureAWS';
 
 const DB = new AWS.DynamoDB({ apiVersion: '2012-10-08' });
@@ -19,12 +20,6 @@ type LambdaEvent ={
 type LambdaResponse = {
   statusCode: number;
   body: string;
-}
-
-type Body = {
-  id: string,
-  kind: string,
-  data: string
 }
 
 type ResponseFn = (statusCode: number, data: string) => LambdaResponse;
@@ -89,7 +84,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
   await configureAWS();
 
   const {connectionId} = event.requestContext;
-  let body: Partial<Body>;
+  let body: Partial<EventBody>;
 
   try {
     body = JSON.parse(event.body)
