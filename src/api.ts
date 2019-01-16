@@ -5,7 +5,7 @@ import { EventBody } from './types';
 import configureAWS from './configureAWS';
 
 const DB = new AWS.DynamoDB({ apiVersion: '2012-10-08' });
-const CONNECTIONS_TABLE_NAME = global.process.env.CONNECTIONS_TABLE_NAME;
+const CONNECTIONS_TABLE_NAME = process.env.CONNECTIONS_TABLE_NAME;
 
 type LambdaEvent ={
   requestContext: {

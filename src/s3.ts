@@ -5,7 +5,7 @@ import { EventBody } from './types';
 import configureAWS from './configureAWS';
 
 const DB = new AWS.DynamoDB({ apiVersion: '2012-10-08' });
-const CONNECTIONS_TABLE_NAME = global.process.env.CONNECTIONS_TABLE_NAME;
+const CONNECTIONS_TABLE_NAME = process.env.CONNECTIONS_TABLE_NAME;
 
 type LambdaEventRecord = {
   s3: {
@@ -45,9 +45,6 @@ export async function handler(event: LambdaEvent): Promise<any> {
       },
     };
     console.log(`Fetching connections for ${key}`);
-    // @ts-ignore
-    const v = AWS.VERSION;
-    console.log(`!!! ${v}`);
 
     return DB.query(params).promise()
       .then((result) => {
