@@ -37,3 +37,24 @@ aws lambda update-function-code \
   --function-name hadrians-wall-s3 \
   --zip-file fileb://$(pwd)/build.zip
 ```
+
+## Test
+
+Run test script, providing `BUCKET`, `API_NAME`, and `API_STAGE`:
+
+```
+BUCKET=hadrians-wall-bucket-... \
+API_NAME=... \
+API_STAGE=... \
+nodejs test.js
+```
+
+Output should look something like:
+
+```
+Sending {"id":"v7qtqfn7r","kind":"subscribe","data":"ssl2kd1gd"}
+Received {"id":"v7qtqfn7r","kind":"subscribe","data":"ssl2kd1gd"}
+Updating s3://hadrians-wall-bucket-1a5kcj93dxonc/ssl2kd1gd
+Updated s3://hadrians-wall-bucket-1a5kcj93dxonc/ssl2kd1gd
+Received {"id":"uk4uxvpxs","kind":"notification","data":"ssl2kd1gd"}
+```

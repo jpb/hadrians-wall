@@ -37,7 +37,7 @@ function subscribe(event: LambdaEvent, s3ObjectPath: string, response: ResponseF
 
   return DB.putItem(params).promise()
     .then(() => {
-      return response(200, `Subscribed to ${s3ObjectPath}`);
+      return response(200, s3ObjectPath);
     }, (err) => {
       return response(500, err.message);
     });
@@ -101,7 +101,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
       statusCode,
       body: JSON.stringify({
         id: body.id,
-        kind: statusCode === 200 ? 'response' : 'error',
+        kind: statusCode === 200 ? body.kind : 'error',
         data,
       })
     }
