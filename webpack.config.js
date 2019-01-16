@@ -11,9 +11,6 @@ module.exports = {
   resolve: {
     extensions: ['.ts', '.tsx', '.js']
   },
-  externals: {
-    'aws-sdk': 'aws-sdk',
-  },
   module: {
     rules: [
       {
@@ -23,4 +20,5 @@ module.exports = {
     ]
   },
   devtool: false,
+  target: "node",
 };

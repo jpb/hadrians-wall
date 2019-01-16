@@ -1,8 +1,12 @@
-Parameters:
-  APICode:
-    Type: String
-
 Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt S3LambdaFunction.Arn
+
   ConnectionsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -72,13 +76,95 @@ Resources:
   APILambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: index.handler
+      Handler: index.apiHandler
       FunctionName: !Sub ${AWS::StackName}-api
       Role: !GetAtt APILambdaFunctionRole.Arn
       Runtime: nodejs8.10
       Timeout: 10
       Code:
-        ZipFile: !Ref APICode
+        ZipFile: IOU
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTable
+  APILambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref APILambdaFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*
+
+  S3LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+      Policies:
+        - PolicyName: ReadEnsignS3Bucket
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:*
+                Resource:
+                  - !GetAtt ConnectionsTable.Arn
+        - PolicyName: ManageAPIConnections
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - execute-api:ManageConnections
+                Resource:
+                  - !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*
+
+  S3LambdaFunctionRoleLoggingPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      Roles:
+        - !Ref S3LambdaFunctionRole
+      PolicyName: LoggingRolePolicy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action:
+              - logs:CreateLogGroup
+            Effect: Allow
+            Resource:
+              - '*'
+            Sid: AllowCreateLogGroup
+          - Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              - logs:DescribeLogStreams
+            Effect: Allow
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${S3LambdaFunction}*
+            Sid: AllowLogGroupOperations
+  S3LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.s3Handler
+      FunctionName: !Sub ${AWS::StackName}-s3
+      Role: !GetAtt S3LambdaFunctionRole.Arn
+      Runtime: nodejs8.10
+      Timeout: 10
+      Code:
+        ZipFile: IOU
+      Environment:
+        Variables:
+          CONNECTIONS_TABLE_NAME: !Ref ConnectionsTable
+  S3LambdaFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref S3LambdaFunction
+      Principal: s3.amazonaws.com

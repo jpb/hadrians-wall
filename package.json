@@ -1,9 +1,9 @@
 {
-  "name": "ensign-public-overrides",
+  "name": "hadrians-wall-api",
   "version": "0.1.0",
   "main": "src/index.ts",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack; zip -j build.zip build/*",
     "lint": "tslint \"src/**/*.ts\""
   },
   "devDependencies": {
@@ -15,7 +15,6 @@
     "webpack-cli": "^3.2.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.358.0",
-    "wscat": "^2.2.1"
+    "aws-sdk": "^2.358.0"
   }
 }

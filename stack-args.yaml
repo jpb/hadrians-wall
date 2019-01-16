@@ -1,9 +1,4 @@
-$imports:
-  apiCode: api/build/index.js
-
 StackName: hadrians-wall
 Template: cfn-template.yaml
-Parameters:
-  APICode: !$ apiCode
 OnFailure: DELETE
 Capabilities: [CAPABILITY_IAM]

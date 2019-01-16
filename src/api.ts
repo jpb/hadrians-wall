@@ -1,4 +1,7 @@
 import * as AWS from 'aws-sdk';
+import * as process from 'process';
+
+import configureAWS from './configureAWS';
 
 const DB = new AWS.DynamoDB({ apiVersion: '2012-10-08' });
 const CONNECTIONS_TABLE_NAME = global.process.env.CONNECTIONS_TABLE_NAME;
@@ -6,7 +9,9 @@ const CONNECTIONS_TABLE_NAME = global.process.env.CONNECTIONS_TABLE_NAME;
 type LambdaEvent ={
   requestContext: {
     routeKey: string,
-    connectionId: string
+    connectionId: string,
+    domainName: string,
+    stage: string,
   },
   body: string
 }
@@ -24,12 +29,14 @@ type Body = {
 
 type ResponseFn = (statusCode: number, data: string) => LambdaResponse;
 
-function subscribe(connectionId: string, s3ObjectPath: string, response: ResponseFn) {
+function subscribe(event: LambdaEvent, s3ObjectPath: string, response: ResponseFn) {
   const params = {
     TableName: CONNECTIONS_TABLE_NAME,
     Item: {
-      connectionId: { S: connectionId },
+      connectionId: { S: event.requestContext.connectionId },
       s3ObjectPath: { S: s3ObjectPath },
+      domainName: { S: event.requestContext.domainName },
+      stage: { S: event.requestContext.stage },
     }
   }
 
@@ -79,6 +86,8 @@ function disconnect(connectionId: string, response: ResponseFn) {
 }
 
 export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
+  await configureAWS();
+
   const {connectionId} = event.requestContext;
   let body: Partial<Body>;
 
@@ -110,7 +119,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
       return disconnect(connectionId, response);
     case 'subscribe':
       if (typeof body.data === 'string') {
-        return subscribe(connectionId, body.data, response);
+        return subscribe(event, body.data, response);
       } else {
         return response(500, 'Missing string property `data`');
       }
