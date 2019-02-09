@@ -73,6 +73,7 @@ Resources:
             Resource:
               - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${APILambdaFunction}*
             Sid: AllowLogGroupOperations
+
   APILambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -86,6 +87,7 @@ Resources:
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTable
+
   APILambdaFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -149,6 +151,7 @@ Resources:
             Resource:
               - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${S3LambdaFunction}*
             Sid: AllowLogGroupOperations
+
   S3LambdaFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -162,9 +165,99 @@ Resources:
       Environment:
         Variables:
           CONNECTIONS_TABLE_NAME: !Ref ConnectionsTable
+
   S3LambdaFunctionPermission:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
       FunctionName: !Ref S3LambdaFunction
       Principal: s3.amazonaws.com
+
+  Api:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Ref AWS::StackName
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.kind
+
+  ApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref Api
+      StageName: stable
+      DeploymentId: !Ref ApiDeployment
+
+  ApiDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    Properties:
+      ApiId: !Ref Api
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: $default
+      Target: !Sub integrations/${APILambdaFunctionIntegration}
+
+  SubscribeRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: subscribe
+      Target: !Sub integrations/${APILambdaFunctionIntegration}
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: $connect
+      Target: !Sub integrations/${APILambdaFunctionIntegration}
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Api
+      RouteKey: $disconnect
+      Target: !Sub integrations/${APILambdaFunctionIntegration}
+
+  DefaultRouteResponse:
+    Type: AWS::ApiGatewayV2::RouteResponse
+    Properties:
+      ApiId: !Ref Api
+      RouteResponseKey: $default
+      RouteId: !Ref DefaultRoute
+
+  SubscribeRouteResponse:
+    Type: AWS::ApiGatewayV2::RouteResponse
+    Properties:
+      ApiId: !Ref Api
+      RouteResponseKey: $default
+      RouteId: !Ref SubscribeRoute
+
+  ConnectRouteResponse:
+    Type: AWS::ApiGatewayV2::RouteResponse
+    Properties:
+      ApiId: !Ref Api
+      RouteResponseKey: $default
+      RouteId: !Ref ConnectRoute
+
+  DisconnectRouteResponse:
+    Type: AWS::ApiGatewayV2::RouteResponse
+    Properties:
+      ApiId: !Ref Api
+      RouteResponseKey: $default
+      RouteId: !Ref DisconnectRoute
+
+  APILambdaFunctionIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref Api
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${APILambdaFunction.Arn}/invocations
+
+  APILambdaFunctionIntegrationResponse:
+    Type: AWS::ApiGatewayV2::IntegrationResponse
+    Properties:
+      ApiId: !Ref Api
+      IntegrationId: !Ref APILambdaFunctionIntegration
+      IntegrationResponseKey: $default
